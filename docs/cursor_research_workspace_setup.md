@@ -29,6 +29,8 @@ Optional arguments:
   --cache-dir /ABSOLUTE/PATH/TO/.ir_search_cache
 ```
 
+`--ir-search-live` defaults to `0` for first-run safety. Rerun with `--ir-search-live 1` after provider keys are configured, or edit `.cursor/mcp.json` locally.
+
 Use `--dry-run` to preview created files. Existing files are not overwritten unless `--overwrite` is provided.
 
 ## MCP Configuration
@@ -75,6 +77,21 @@ Then test evidence discipline:
 [R-FINANCE-WEB]
 请调用 ir_search.deep_research，分析最近关于“AI 光模块 海外需求”的公开信息。必须列 diagnostics，不要把 search snippet 当最终证据。
 ```
+
+Recommended prompt order:
+
+1. `prompts/R-SOURCE-HEALTH.md`
+2. `prompts/R-DEEP-RESEARCH-SMOKE.md`
+3. `prompts/R-FINANCE-WEB.md`
+4. `prompts/R-LITERATURE.md`
+
+## Outputs And Indexing
+
+The generated workspace keeps Cursor indexing narrow:
+
+- `outputs/reports/`, `outputs/memos/`, and `outputs/source_tables/` are intended for reusable research artifacts.
+- `outputs/raw/` and `outputs/tmp/` are excluded from indexing for bulky source dumps and scratch files.
+- `scripts/validate_workspace.py` is indexed so future maintainers can inspect the workspace checks.
 
 ## Fallback When MCP Is Unavailable
 

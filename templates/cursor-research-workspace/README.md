@@ -22,6 +22,18 @@ It is designed to make Cursor behave more like a web-based GPT/Claude research a
 
 1. Open this folder alone in Cursor.
 2. Do not open the `ir-search` code repository in the same Cursor window for research Q&A.
-3. Start with `ir_search.source_health` for current-information questions.
-4. Use `ir_search.deep_research` when available.
-5. If MCP fails, downgrade to conceptual analysis and a manual verification checklist.
+3. Start with `prompts/R-SOURCE-HEALTH.md` to call `ir_search.source_health`.
+4. Run `prompts/R-DEEP-RESEARCH-SMOKE.md` before production use.
+5. Use `prompts/R-FINANCE-WEB.md` for current finance or market work.
+6. Use `prompts/R-LITERATURE.md` for local-only / document-first reading.
+7. If MCP fails, downgrade to conceptual analysis and a manual verification checklist.
+
+## Outputs
+
+Use `outputs/reports/`, `outputs/memos/`, and `outputs/source_tables/` for research artifacts that Cursor may index later.
+
+Use `outputs/raw/` and `outputs/tmp/` for bulky raw evidence, downloads, or scratch files. These directories are excluded from indexing by default.
+
+## Local-only Literature Tasks
+
+When a prompt or user instruction says local-only, document-only, or uses `R-LITERATURE`, prioritize the explicitly provided paper, report, note, or workspace source. Call `ir_search` only if the user asks for current verification, external corroboration, or whether a claim still holds today.

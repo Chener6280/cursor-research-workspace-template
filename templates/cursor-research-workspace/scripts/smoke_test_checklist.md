@@ -28,7 +28,7 @@ Prompt:
 1. 先说明 source_health；
 2. 列出 diagnostics；
 3. 不要把 search snippet 当最终证据；
-4. 区分官方事实、媒体报道、券商观点、未验证事项。
+4. 使用 claim_ledger.status 四态标注关键结论：supported / mixed / insufficient_evidence / contradicted。
 ```
 
 Expected:
@@ -37,7 +37,7 @@ Expected:
 - Uses deep_research if available.
 - Shows diagnostics.
 - Does not treat WeChat / broker / media as official fact.
-- Marks unsupported items.
+- Marks unsupported items as insufficient_evidence or contradicted when appropriate.
 
 ## Test 3: fallback behavior
 

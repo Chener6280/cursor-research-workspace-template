@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import sys
 from pathlib import Path
 
 
@@ -13,18 +12,21 @@ REQUIRED_FILES = [
     ".cursorignore",
     ".cursorindexingignore",
     ".cursor/mcp.json",
+    ".cursor/mcp.json.template",
     ".cursor/rules/00-research-defaults.mdc",
     ".cursor/rules/10-finance-research-style.mdc",
     ".cursor/rules/20-ir-search-evidence-policy.mdc",
     ".cursor/rules/30-output-format.mdc",
     ".cursor/rules/40-fallback-policy.mdc",
     ".cursor/rules/50-current-facts-policy.mdc",
+    "prompts/README.md",
     "prompts/R-FINANCE-WEB.md",
     "prompts/R-LITERATURE.md",
     "prompts/R-LATEST-GUARD.md",
     "prompts/R-VERIFY-CLAIMS.md",
     "prompts/R-SOURCE-HEALTH.md",
     "prompts/R-DEEP-RESEARCH-SMOKE.md",
+    "notes/smoke_test_checklist.md",
 ]
 
 UNREPLACED_PLACEHOLDERS = [
@@ -46,53 +48,165 @@ REQUIRED_RULE_PHRASES = [
     "contradicted",
 ]
 
+STATUS_VALUES = ["supported", "mixed", "insufficient_evidence", "contradicted"]
+ENV_REF_RE = re.compile(r"\$\{env:[A-Za-z_][A-Za-z0-9_]*\}")
 PERSONAL_PATH_PATTERNS = [
     re.compile(r"/Users/(?!example\b|Shared\b)[A-Za-z0-9._-]+"),
     re.compile(r"C:\\Users\\(?!example\\)[A-Za-z0-9._-]+"),
     re.compile(r"/home/(?!example\b)[A-Za-z0-9._-]+"),
 ]
+SECRET_FIELD_RE = re.compile(
+    r"(?i)\b(api[_-]?key|key|token|secret|cookie|authorization|bearer|access[_-]?token|refresh[_-]?token|session)\b"
+    r"\s*[:=]\s*[\"']?([^\"',\s#]+)"
+)
 
 
-def validate_workspace(root: Path) -> list[str]:
+def validate_workspace(root: Path, *, strict: bool = False) -> list[str]:
+    errors, _warnings = collect_validation_issues(root, strict=strict)
+    return errors
+
+
+def collect_validation_issues(root: Path, *, strict: bool = False) -> tuple[list[str], list[str]]:
     errors: list[str] = []
+    warnings: list[str] = []
     root = root.expanduser().resolve()
     if not root.exists():
-        return [f"Workspace does not exist: {root}"]
+        return [f"Workspace does not exist: {root}"], warnings
 
     for rel in REQUIRED_FILES:
         if not (root / rel).exists():
             errors.append(f"Missing file: {rel}")
 
-    mcp_path = root / ".cursor" / "mcp.json"
-    mcp_data = {}
-    if mcp_path.exists():
-        try:
-            mcp_text = mcp_path.read_text(encoding="utf-8")
-            mcp_data = json.loads(mcp_text)
-        except json.JSONDecodeError as exc:
-            errors.append(f"Invalid JSON: .cursor/mcp.json: {exc}")
-            mcp_text = ""
-        for placeholder in UNREPLACED_PLACEHOLDERS:
-            if placeholder in mcp_text:
-                errors.append(f"Unreplaced placeholder in .cursor/mcp.json: {placeholder}")
-        if _contains_secret(mcp_text):
-            errors.append("Possible secret found in .cursor/mcp.json")
-        if "mcpServers" not in mcp_data:
-            errors.append("Missing mcpServers in .cursor/mcp.json")
+    _validate_mcp(root, errors, warnings)
+    _validate_rules(root, errors)
+    _validate_ignore_files(root, errors)
+    _validate_line_sensitive_files(root, errors)
+    _validate_policy_consistency(root, errors)
+    _scan_workspace_text(root, errors, warnings, strict=strict)
+    return errors, warnings
 
-    rules_text = "\n".join(path.read_text(encoding="utf-8") for path in sorted((root / ".cursor" / "rules").glob("*.mdc")))
+
+def _validate_mcp(root: Path, errors: list[str], warnings: list[str]) -> None:
+    for rel in [".cursor/mcp.json.template", ".cursor/mcp.json"]:
+        path = root / rel
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        if text.count("\n") < 2:
+            errors.append(f"{rel} must be formatted as multi-line JSON")
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError as exc:
+            errors.append(f"Invalid JSON: {rel}: {exc}")
+            data = {}
+        if rel == ".cursor/mcp.json":
+            for placeholder in UNREPLACED_PLACEHOLDERS:
+                if placeholder in text:
+                    errors.append(f"Unreplaced placeholder in .cursor/mcp.json: {placeholder}")
+            if "mcpServers" not in data:
+                errors.append("Missing mcpServers in .cursor/mcp.json")
+        if ENV_REF_RE.search(text):
+            warnings.append(f"{rel} uses ${'{'}env:KEY{'}'} references; confirm Cursor env expansion or launch Cursor from an exported shell.")
+
+
+def _validate_rules(root: Path, errors: list[str]) -> None:
+    rules_dir = root / ".cursor" / "rules"
+    rules_text = "\n".join(path.read_text(encoding="utf-8") for path in sorted(rules_dir.glob("*.mdc")))
     lowered_rules = rules_text.lower()
     for phrase in REQUIRED_RULE_PHRASES:
         if phrase.lower() not in lowered_rules:
             errors.append(f"Missing required rule phrase: {phrase}")
 
+    for path in sorted(rules_dir.glob("*.mdc")):
+        text = path.read_text(encoding="utf-8")
+        frontmatter = _parse_mdc_frontmatter(text)
+        rel = path.relative_to(root)
+        if frontmatter is None:
+            errors.append(f"Invalid MDC frontmatter: {rel}")
+            continue
+        if "description" not in frontmatter:
+            errors.append(f"Missing description in MDC frontmatter: {rel}")
+        if "alwaysApply" not in frontmatter:
+            errors.append(f"Missing alwaysApply in MDC frontmatter: {rel}")
+
+
+def _parse_mdc_frontmatter(text: str) -> dict[str, str] | None:
+    lines = text.splitlines()
+    if len(lines) < 4 or lines[0].strip() != "---":
+        return None
+    try:
+        end = lines[1:].index("---") + 1
+    except ValueError:
+        return None
+    frontmatter: dict[str, str] = {}
+    for line in lines[1:end]:
+        if not line.strip():
+            continue
+        if ":" not in line:
+            return None
+        key, value = line.split(":", 1)
+        frontmatter[key.strip()] = value.strip()
+    return frontmatter
+
+
+def _validate_ignore_files(root: Path, errors: list[str]) -> None:
     for rel in [".cursorignore", ".cursorindexingignore"]:
         path = root / rel
-        if path.exists():
-            lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip() and not line.startswith("#")]
-            if not lines or lines[0] != "/*":
-                errors.append(f"{rel} must use default deny mode")
+        if not path.exists():
+            continue
+        lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip() and not line.lstrip().startswith("#")]
+        if not lines:
+            errors.append(f"{rel} must contain active ignore rules")
+            continue
+        if lines[0] != "/*":
+            errors.append(f"{rel} must use default deny mode")
+        if rel == ".cursorindexingignore":
+            required_rules = ["!/outputs/", "!/outputs/**", "!/scripts/", "!/scripts/**", "/outputs/raw/", "/outputs/tmp/"]
+            for rule in required_rules:
+                if rule not in lines:
+                    errors.append(f"{rel} missing indexing rule: {rule}")
 
+
+def _validate_line_sensitive_files(root: Path, errors: list[str]) -> None:
+    candidates = [
+        root / "README.md",
+        root / "AGENTS.md",
+        root / ".cursorignore",
+        root / ".cursorindexingignore",
+        root / ".cursor" / "mcp.json.template",
+    ]
+    candidates.extend(sorted((root / ".cursor" / "rules").glob("*.mdc")))
+    candidates.extend(sorted((root / "prompts").glob("*.md")))
+    for path in candidates:
+        if not path.exists() or not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
+        if len(text) > 120 and text.count("\n") == 0:
+            errors.append(f"Line-sensitive file appears single-line: {path.relative_to(root)}")
+
+
+def _validate_policy_consistency(root: Path, errors: list[str]) -> None:
+    policy = _read_optional(root / ".cursor" / "rules" / "20-ir-search-evidence-policy.mdc")
+    fallback = _read_optional(root / ".cursor" / "rules" / "40-fallback-policy.mdc")
+    literature = _read_optional(root / "prompts" / "R-LITERATURE.md")
+    readme = _read_optional(root / "README.md")
+    smoke = _read_optional(root / "notes" / "smoke_test_checklist.md") + "\n" + _read_optional(root / "scripts" / "smoke_test_checklist.md")
+
+    if "Local-only and literature exceptions" not in policy or "R-LITERATURE" not in policy:
+        errors.append("Missing local-only literature exception in 20-ir-search-evidence-policy.mdc")
+    if "local-only / document-first" not in literature:
+        errors.append("R-LITERATURE.md must declare local-only / document-first priority")
+    for status in STATUS_VALUES:
+        if status not in policy:
+            errors.append(f"Canonical policy missing claim status: {status}")
+    if "canonical source of truth for fallback wording" not in fallback:
+        errors.append("40-fallback-policy.mdc must declare canonical fallback wording")
+    for text_name, text in [("README.md", readme), ("smoke checklist", smoke)]:
+        if "source_health" not in text:
+            errors.append(f"Missing source_health onboarding in {text_name}")
+
+
+def _scan_workspace_text(root: Path, errors: list[str], warnings: list[str], *, strict: bool) -> None:
     for path in root.rglob("*"):
         if not path.is_file():
             continue
@@ -100,14 +214,22 @@ def validate_workspace(root: Path) -> list[str]:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-        for personal_path_pattern in PERSONAL_PATH_PATTERNS:
-            match = personal_path_pattern.search(text)
-            if match:
-                errors.append(f"Personal path found in {path.relative_to(root)}: {match.group(0)}")
+        rel = path.relative_to(root)
+        for match in _find_personal_paths(text):
+            message = f"Personal path found in {rel}: {match}"
+            if strict:
+                errors.append(message)
+            else:
+                warnings.append(message)
         if _contains_secret(text):
-            errors.append(f"Possible secret found in {path.relative_to(root)}")
+            errors.append(f"Possible secret found in {rel}")
 
-    return errors
+
+def _find_personal_paths(text: str) -> list[str]:
+    matches: list[str] = []
+    for pattern in PERSONAL_PATH_PATTERNS:
+        matches.extend(match.group(0) for match in pattern.finditer(text))
+    return matches
 
 
 def _contains_secret(text: str) -> bool:
@@ -118,18 +240,41 @@ def _contains_secret(text: str) -> bool:
         openai_key_prefix = "s" + "k-"
         if re.search(r"\b" + re.escape(openai_key_prefix) + r"[A-Za-z0-9_-]{12,}", stripped):
             return True
-        if re.search(r"\bBearer\s+[A-Za-z0-9._-]{8,}", stripped):
+        bearer_match = re.search(r"\bBearer\s+([A-Za-z0-9._-]{8,})", stripped, flags=re.IGNORECASE)
+        if bearer_match and not _is_placeholder_value(bearer_match.group(1)):
             return True
-        if re.search(r"(?i)(api_key|token|secret)\s*=\s*(?!\$\{env:|$|\"\"$)[^\s#]+", stripped):
+        field_match = SECRET_FIELD_RE.search(stripped)
+        if field_match and not _is_placeholder_value(field_match.group(2)):
             return True
     return False
+
+
+def _is_placeholder_value(value: str) -> bool:
+    cleaned = value.strip().strip("\"',")
+    lowered = cleaned.lower()
+    if not cleaned:
+        return True
+    if cleaned.startswith("${env:"):
+        return True
+    if cleaned.startswith("/ABSOLUTE/PATH/TO/"):
+        return True
+    return lowered in {"your-key-here", "replace-me", "placeholder", "example", "fake-test-token", "dummy", "null", "none", "false", "true", "\"\""}
+
+
+def _read_optional(path: Path) -> str:
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Validate a Cursor research workspace")
     parser.add_argument("workspace", type=Path)
+    parser.add_argument("--strict", action="store_true", help="Treat personal paths as errors instead of warnings")
     args = parser.parse_args(argv)
-    errors = validate_workspace(args.workspace)
+    errors, warnings = collect_validation_issues(args.workspace, strict=args.strict)
+    for warning in warnings:
+        print(f"[WARN] {warning}")
     if errors:
         for error in errors:
             print(f"[ERROR] {error}")

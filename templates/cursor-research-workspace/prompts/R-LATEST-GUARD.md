@@ -11,4 +11,6 @@
 - 明确说明“以下回答基于已有知识和已提供材料，最新事实需外部核验”；
 - 给出应该核验的关键词、机构网站、公司公告源、数据源或论文库。
 
+若进行了检索或核验，请按 `claim_ledger.status` 四态标注关键结论：supported / mixed / insufficient_evidence / contradicted。推断和假设只能作为 caveat。
+
 问题：

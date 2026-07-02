@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Evidence-based Output Format
 
-For current-information or evidence-based research questions, use this structure:
+对需要当前信息或证据支撑的研究问题，使用以下结构：
 
 ## 检索状态
 
@@ -20,7 +20,7 @@ For current-information or evidence-based research questions, use this structure
 
 ## 核心结论
 
-Numbered conclusions only. Each conclusion must be tied to one of:
+仅输出编号结论。每条结论必须绑定 `20-ir-search-evidence-policy.mdc` 中定义的 `claim_ledger.status`：
 
 - supported;
 - mixed;
@@ -34,12 +34,12 @@ Numbered conclusions only. Each conclusion must be tied to one of:
 
 ## 分析
 
-Explain mechanisms, implications, and alternative explanations.
+解释机制、含义、替代解释和证据边界。推断、假设或观点只能作为 caveat，不得替代 claim status。
 
 ## 未验证事项
 
-List facts that require further verification.
+列出仍需进一步核验的事实、来源和核验路径。
 
 ## 结论边界
 
-State what the evidence can and cannot support.
+说明当前证据能够支持什么、不能支持什么。

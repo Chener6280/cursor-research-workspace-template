@@ -4,7 +4,7 @@
 
 要求：
 
-1. 每个 claim 必须有 status：supported / mixed / insufficient_evidence / contradicted。
+1. 每个 claim 必须使用 `20-ir-search-evidence-policy.mdc` 中的 canonical status：supported / mixed / insufficient_evidence / contradicted。
 2. 每个 supported claim 必须给出至少一个来源。
 3. 微信、媒体、券商观点不能单独升级为官方事实。
 4. 如果没有官方源，请明确标注。

@@ -11,12 +11,14 @@
 3. ir_search.extract_evidence
 4. ir_search.verify_claims
 
-回答必须区分：
+回答必须使用 `20-ir-search-evidence-policy.mdc` 中的 `claim_ledger.status` 四态作为主分类：
 
-1. 直接证据支持的事实
-2. 合理推断
-3. 观点或假设
-4. 未验证事项
+1. supported
+2. mixed
+3. insufficient_evidence
+4. contradicted
+
+推断、观点或假设只能写入 caveat 或分析部分，不得作为主分类替代 claim status。
 
 不要把 search snippet 当最终证据。
 不要把 mock / placeholder / fallback 当权威来源。

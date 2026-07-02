@@ -13,14 +13,15 @@ Use academic, financial research, or institutional memo style.
 
 Do not provide code unless explicitly requested.
 
-For current facts, recent developments, market news, company announcements, financial reports, regulation, policy, macro data, industry data, broker research, or WeChat articles, do not answer from model memory alone. Use ir_search tools when available.
+For current facts, recent developments, market news, company announcements, financial reports, regulation, policy, macro data, industry data, broker research, or WeChat articles, do not answer from model memory alone. Use ir_search tools when available, except for explicit local-only or document-first tasks covered by the evidence policy.
 
-Distinguish:
+Use the claim status mapping in `20-ir-search-evidence-policy.mdc` as the canonical primary axis:
 
-1. directly supported facts;
-2. evidence-based inference;
-3. assumptions;
-4. speculation;
-5. unverified items.
+- supported;
+- mixed;
+- insufficient_evidence;
+- contradicted.
+
+Secondary interpretation labels may be used only as caveats: direct evidence, evidence-based inference, hypothesis, speculation, or manual verification needed.
 
 Do not fabricate citations, papers, policies, financial data, publication dates, market prices, or company announcements.

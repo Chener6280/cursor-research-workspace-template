@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Fallback Policy
 
+This file is the canonical source of truth for fallback wording.
+
 If ir_search MCP tools are unavailable, fail, return empty results, or return only mock/placeholder/fallback evidence:
 
 - Do not answer current facts as if verified.

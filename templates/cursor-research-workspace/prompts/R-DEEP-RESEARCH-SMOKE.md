@@ -11,5 +11,5 @@
 2. 再调用 deep_research；
 3. 输出 diagnostics；
 4. 不要把 search snippet 当最终证据；
-5. 区分官方事实、媒体报道、券商观点、未验证事项；
+5. 使用 claim_ledger.status 四态区分 supported / mixed / insufficient_evidence / contradicted；
 6. 如果工具不可用，请按 fallback policy 降级。

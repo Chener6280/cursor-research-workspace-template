@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -15,7 +16,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Bootstrap a Cursor research workspace from the ir-search template")
     parser.add_argument("--target", required=True, type=Path, help="Target research workspace directory")
     parser.add_argument("--ir-search-python", required=True, type=Path, help="Absolute path to the ir-search environment Python")
-    parser.add_argument("--ir-search-live", default="1")
+    parser.add_argument("--ir-search-live", default="0")
     parser.add_argument("--manual-wechat-root", default="/ABSOLUTE/PATH/TO/manual_wechat_articles")
     parser.add_argument("--cache-dir", default="/ABSOLUTE/PATH/TO/.ir_search_cache")
     parser.add_argument("--overwrite", action="store_true")
@@ -29,6 +30,12 @@ def main(argv: list[str] | None = None) -> int:
         "{{MANUAL_WECHAT_ROOT}}": str(Path(args.manual_wechat_root).expanduser()),
         "{{IR_SEARCH_CACHE_DIR}}": str(Path(args.cache_dir).expanduser()),
     }
+    if str(args.ir_search_live) == "1" and not _has_live_provider_key():
+        print(
+            "[WARN] IR_SEARCH_LIVE=1 but no BOCHA_API_KEY / EXA_API_KEY / "
+            "TAVILY_API_KEY / ANYSEARCH_API_KEY was detected in the current shell. "
+            "Cursor may still expand ${env:KEY}, but please confirm with R-SOURCE-HEALTH."
+        )
 
     planned = plan_files(target)
     if args.dry_run:
@@ -48,7 +55,10 @@ def main(argv: list[str] | None = None) -> int:
         shutil.copy2(src, dst)
 
     render_mcp_files(target, replacements, overwrite=args.overwrite)
-    return validate_generated_workspace(target)
+    result = validate_generated_workspace(target)
+    if result == 0:
+        print_onboarding(target)
+    return result
 
 
 def plan_files(target: Path) -> list[tuple[Path, Path]]:
@@ -72,6 +82,19 @@ def render_mcp_files(target: Path, replacements: dict[str, str], *, overwrite: b
         example_path.write_text(rendered, encoding="utf-8")
     if overwrite or not mcp_path.exists():
         mcp_path.write_text(rendered, encoding="utf-8")
+
+
+def _has_live_provider_key() -> bool:
+    return any(os.environ.get(name) for name in ["BOCHA_API_KEY", "EXA_API_KEY", "TAVILY_API_KEY", "ANYSEARCH_API_KEY"])
+
+
+def print_onboarding(target: Path) -> None:
+    print("[OK] Workspace created.")
+    print("Next steps:")
+    print(f"1. Open this folder alone in Cursor: {target}")
+    print("2. Run prompt: prompts/R-SOURCE-HEALTH.md")
+    print("3. If all live sources are unavailable, check env expansion and API keys.")
+    print("4. To enable live mode, rerun with --ir-search-live 1 or edit .cursor/mcp.json.")
 
 
 def validate_generated_workspace(target: Path) -> int:

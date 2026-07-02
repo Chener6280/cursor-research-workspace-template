@@ -21,6 +21,8 @@ def test_workspace_template_files_exist():
         ".cursor/mcp.json.template",
         ".cursor/rules/20-ir-search-evidence-policy.mdc",
         "prompts/R-FINANCE-WEB.md",
+        "prompts/README.md",
+        "notes/smoke_test_checklist.md",
         "scripts/validate_workspace.py",
         "scripts/smoke_test_checklist.md",
     ]
@@ -43,6 +45,7 @@ def test_bootstrap_generates_valid_workspace(tmp_path):
     mcp = json.loads((target / ".cursor" / "mcp.json.example").read_text(encoding="utf-8"))
 
     assert mcp["mcpServers"]["ir_search"]["command"] == "/tmp/fake-ir-search/.venv/bin/python"
+    assert mcp["mcpServers"]["ir_search"]["env"]["IR_SEARCH_LIVE"] == "0"
     assert (target / ".cursor" / "mcp.json").exists()
 
 
@@ -59,12 +62,15 @@ def test_validate_workspace_detects_missing_file(tmp_path):
 def test_validate_workspace_detects_secret_and_personal_path(tmp_path):
     target = tmp_path / "research"
     assert bootstrap_main(["--target", str(target), "--ir-search-python", "/tmp/fake-ir-search/.venv/bin/python"]) == 0
-    (target / "notes" / "manual_verification_log.md").write_text("token=fake-test-token\n/Users/alice/private\n", encoding="utf-8")
+    (target / "notes" / "manual_verification_log.md").write_text("token=real-secret\n/Users/alice/private\n", encoding="utf-8")
 
-    errors = _load_validator().validate_workspace(target)
+    validator = _load_validator()
+    errors, warnings = validator.collect_validation_issues(target)
+    strict_errors = validator.validate_workspace(target, strict=True)
 
     assert any("Possible secret" in error for error in errors)
-    assert any("Personal path" in error for error in errors)
+    assert any("Personal path" in warning for warning in warnings)
+    assert any("Personal path" in error for error in strict_errors)
 
 
 def test_rules_include_required_evidence_constraints():
