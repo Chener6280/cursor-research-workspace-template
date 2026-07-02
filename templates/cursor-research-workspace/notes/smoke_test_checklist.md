@@ -1,6 +1,8 @@
 # Smoke Test Checklist
 
-Run these prompts after creating the workspace:
+Canonical checklist: `scripts/smoke_test_checklist.md`.
+
+Recommended first-run order:
 
 0. `docs/onboarding.md`
 1. `prompts/R-SOURCE-HEALTH.md`
@@ -8,7 +10,9 @@ Run these prompts after creating the workspace:
 3. `prompts/R-FINANCE-WEB.md`
 4. `prompts/R-LITERATURE.md`
 
-Expected behavior:
+Use `sources/papers/sample_monetary_policy_transmission.md` for local-only literature smoke tests.
+
+Expected behavior summary:
 
 - Source health is reported before current-information research.
 - API key values are never printed.

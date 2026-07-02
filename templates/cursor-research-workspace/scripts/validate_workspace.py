@@ -30,6 +30,7 @@ REQUIRED_FILES = [
     "notes/smoke_test_checklist.md",
     "scripts/bootstrap_workspace.sh",
     "scripts/run_ir_search_mcp.sh",
+    "sources/papers/sample_monetary_policy_transmission.md",
 ]
 
 UNREPLACED_PLACEHOLDERS = [

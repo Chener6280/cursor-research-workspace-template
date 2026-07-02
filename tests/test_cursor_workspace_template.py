@@ -28,6 +28,7 @@ def test_workspace_template_files_exist():
         "scripts/run_ir_search_mcp.sh",
         "scripts/validate_workspace.py",
         "scripts/smoke_test_checklist.md",
+        "sources/papers/sample_monetary_policy_transmission.md",
     ]
 
     for rel in required:

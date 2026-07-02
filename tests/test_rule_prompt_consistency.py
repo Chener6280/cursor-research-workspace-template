@@ -49,3 +49,25 @@ def test_output_format_is_chinese_and_fallback_is_canonical():
     assert "canonical source of truth for fallback wording" in fallback_rule
     assert "我无法从当前可用工具中取得足够可核验证据" in latest
     assert "以下回答基于已有知识和已提供材料" not in latest
+
+
+def test_literature_sample_supports_local_only_smoke():
+    sample = (TEMPLATE_ROOT / "sources" / "papers" / "sample_monetary_policy_transmission.md").read_text(encoding="utf-8")
+    checklist = (TEMPLATE_ROOT / "scripts" / "smoke_test_checklist.md").read_text(encoding="utf-8")
+    notes_checklist = (TEMPLATE_ROOT / "notes" / "smoke_test_checklist.md").read_text(encoding="utf-8")
+
+    assert "synthetic" in sample
+    assert "difference-in-differences" in sample
+    assert "sample_monetary_policy_transmission.md" in checklist
+    assert "Canonical checklist" in notes_checklist
+
+
+def test_claim_status_language_prevents_unsupported_fact_writing():
+    policy = (TEMPLATE_ROOT / ".cursor" / "rules" / "20-ir-search-evidence-policy.mdc").read_text(encoding="utf-8")
+    output_rule = (TEMPLATE_ROOT / ".cursor" / "rules" / "30-output-format.mdc").read_text(encoding="utf-8")
+    verify_prompt = (TEMPLATE_ROOT / "prompts" / "R-VERIFY-CLAIMS.md").read_text(encoding="utf-8")
+
+    assert "insufficient_evidence: do not state as fact" in policy
+    assert "contradicted: state the contradiction clearly" in policy
+    assert "不得替代 claim status" in output_rule
+    assert "不能单独升级为官方事实" in verify_prompt

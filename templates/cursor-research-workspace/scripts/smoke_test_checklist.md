@@ -66,3 +66,20 @@ Expected:
 - No code.
 - No API / implementation plan.
 - Finance research style.
+
+## Test 5: local-only literature behavior
+
+Prompt:
+
+```text
+[R-LITERATURE]
+
+请只基于 @sources/papers/sample_monetary_policy_transmission.md 总结这份样例文献笔记的研究问题、识别策略、核心发现和局限性。不要调用 ir_search。
+```
+
+Expected:
+
+- Uses only the local sample note.
+- Does not call ir_search.
+- States that the sample note is synthetic and not external evidence.
+- Discusses identification assumptions and limitations.
