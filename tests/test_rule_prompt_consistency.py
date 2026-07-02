@@ -40,7 +40,12 @@ def test_prompts_use_claim_status_not_parallel_taxonomies():
 def test_output_format_is_chinese_and_fallback_is_canonical():
     output_rule = (TEMPLATE_ROOT / ".cursor" / "rules" / "30-output-format.mdc").read_text(encoding="utf-8")
     fallback_rule = (TEMPLATE_ROOT / ".cursor" / "rules" / "40-fallback-policy.mdc").read_text(encoding="utf-8")
+    latest = (TEMPLATE_ROOT / "prompts" / "R-LATEST-GUARD.md").read_text(encoding="utf-8")
 
     assert "仅输出编号结论" in output_rule
+    assert "R-LITERATURE" in output_rule
+    assert "R-SOURCE-HEALTH" in output_rule
     assert "解释机制、含义、替代解释和证据边界" in output_rule
     assert "canonical source of truth for fallback wording" in fallback_rule
+    assert "我无法从当前可用工具中取得足够可核验证据" in latest
+    assert "以下回答基于已有知识和已提供材料" not in latest

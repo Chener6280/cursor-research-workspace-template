@@ -38,7 +38,10 @@ def test_mcp_json_template_is_valid_multiline_json():
     text = path.read_text(encoding="utf-8")
 
     assert text.count("\n") > 2
-    assert json.loads(text)["mcpServers"]["ir_search"]["command"] == "{{IR_SEARCH_PYTHON}}"
+    mcp = json.loads(text)["mcpServers"]["ir_search"]
+    assert mcp["command"] == "/bin/zsh"
+    assert mcp["env"]["IR_SEARCH_PYTHON"] == "{{IR_SEARCH_PYTHON}}"
+    assert mcp["env"]["IR_SEARCH_ENV_FILE"] == "{{IR_SEARCH_ENV_FILE}}"
 
 
 def test_line_sensitive_template_files_are_not_single_line():

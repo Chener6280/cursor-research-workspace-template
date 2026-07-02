@@ -8,7 +8,9 @@
 !/README.md
 !/.env.example
 
-# Allow research prompts, notes, sources, outputs, and local validation scripts.
+# Allow research prompts, docs, notes, sources, outputs, and local validation scripts.
+!/docs/
+!/docs/**
 !/prompts/
 !/prompts/**
 !/notes/

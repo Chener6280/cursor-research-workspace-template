@@ -14,7 +14,7 @@ def test_cursorignore_default_denies_and_allows_research_workspace_files():
     rules = _active_rules(TEMPLATE_ROOT / ".cursorignore")
 
     assert rules[0] == "/*"
-    for rule in ["!/.cursor/", "!/prompts/", "!/notes/", "!/sources/", "!/outputs/", "!/scripts/"]:
+    for rule in ["!/.cursor/", "!/docs/", "!/prompts/", "!/notes/", "!/sources/", "!/outputs/", "!/scripts/"]:
         assert rule in rules
 
 
@@ -22,7 +22,7 @@ def test_cursorindexingignore_indexes_outputs_and_scripts_but_excludes_raw_tmp()
     rules = _active_rules(TEMPLATE_ROOT / ".cursorindexingignore")
 
     assert rules[0] == "/*"
-    for rule in ["!/outputs/", "!/outputs/**", "!/scripts/", "!/scripts/**"]:
+    for rule in ["!/docs/", "!/docs/**", "!/outputs/", "!/outputs/**", "!/scripts/", "!/scripts/**"]:
         assert rule in rules
     for rule in ["/outputs/raw/", "/outputs/raw/**", "/outputs/tmp/", "/outputs/tmp/**"]:
         assert rule in rules

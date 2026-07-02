@@ -5,7 +5,9 @@ alwaysApply: true
 
 # Evidence-based Output Format
 
-对需要当前信息或证据支撑的研究问题，使用以下结构：
+对需要当前信息或证据支撑的研究问题，使用以下结构。
+
+例外：当用户明确使用 `R-LITERATURE`、`R-SOURCE-HEALTH`，或要求 local-only / document-first / source-health-only 时，以任务 prompt 的结构优先；仍需保留证据边界、fallback 纪律和必要的 `claim_ledger.status` 标注。
 
 ## 检索状态
 

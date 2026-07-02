@@ -18,18 +18,22 @@ From the `ir-search` repository:
 ```bash
 python scripts/bootstrap_cursor_research_workspace.py \
   --target /ABSOLUTE/PATH/TO/cursor-research-workspace \
-  --ir-search-python /ABSOLUTE/PATH/TO/ir-search/.venv/bin/python
+  --ir-search-python /ABSOLUTE/PATH/TO/python \
+  --ir-search-path /ABSOLUTE/PATH/TO/ir-search
 ```
 
 Optional arguments:
 
 ```bash
   --ir-search-live 1 \
+  --env-file /ABSOLUTE/PATH/TO/ir_search.env \
   --manual-wechat-root /ABSOLUTE/PATH/TO/manual_wechat_articles \
   --cache-dir /ABSOLUTE/PATH/TO/.ir_search_cache
 ```
 
-`--ir-search-live` defaults to `0` for first-run safety. Rerun with `--ir-search-live 1` after provider keys are configured, or edit `.cursor/mcp.json` locally.
+`--ir-search-live` defaults to `0` for first-run safety. Rerun with `--ir-search-live 1` after provider keys are configured.
+
+If you already keep provider keys in the `ir_search` repo's `ir_search.env`, pass it with `--env-file`. The generated MCP config points Cursor at `scripts/run_ir_search_mcp.sh`; the wrapper sources the env file at startup, so real keys are not written into `.cursor/mcp.json`.
 
 Use `--dry-run` to preview created files. Existing files are not overwritten unless `--overwrite` is provided.
 
@@ -42,9 +46,13 @@ The bootstrap script renders:
 .cursor/mcp.json
 ```
 
-The generated MCP config uses environment-variable references for real provider credentials. Do not commit API keys, cookies, tokens, or private credentials.
+The generated MCP config uses a local wrapper script:
 
-If your Cursor version does not expand `${env:KEY}`, start Cursor from a shell where the variables are already exported, or edit `.cursor/mcp.json` locally. Do not commit real keys.
+```text
+.cursor/mcp.json -> scripts/run_ir_search_mcp.sh -> python -m ir_search.mcp_server
+```
+
+Do not commit API keys, cookies, tokens, or private credentials. Prefer `--env-file` over putting key values in `.cursor/mcp.json`.
 
 ## Validate
 

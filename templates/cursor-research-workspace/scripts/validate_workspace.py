@@ -19,6 +19,7 @@ REQUIRED_FILES = [
     ".cursor/rules/30-output-format.mdc",
     ".cursor/rules/40-fallback-policy.mdc",
     ".cursor/rules/50-current-facts-policy.mdc",
+    "docs/onboarding.md",
     "prompts/README.md",
     "prompts/R-FINANCE-WEB.md",
     "prompts/R-LITERATURE.md",
@@ -27,6 +28,8 @@ REQUIRED_FILES = [
     "prompts/R-SOURCE-HEALTH.md",
     "prompts/R-DEEP-RESEARCH-SMOKE.md",
     "notes/smoke_test_checklist.md",
+    "scripts/bootstrap_workspace.sh",
+    "scripts/run_ir_search_mcp.sh",
 ]
 
 UNREPLACED_PLACEHOLDERS = [
@@ -49,6 +52,7 @@ REQUIRED_RULE_PHRASES = [
 ]
 
 STATUS_VALUES = ["supported", "mixed", "insufficient_evidence", "contradicted"]
+SKIP_SCAN_PARTS = {".git", ".venv", "__pycache__", ".pytest_cache", ".ir_search_cache"}
 ENV_REF_RE = re.compile(r"\$\{env:[A-Za-z_][A-Za-z0-9_]*\}")
 PERSONAL_PATH_PATTERNS = [
     re.compile(r"/Users/(?!example\b|Shared\b)[A-Za-z0-9._-]+"),
@@ -100,13 +104,54 @@ def _validate_mcp(root: Path, errors: list[str], warnings: list[str]) -> None:
             errors.append(f"Invalid JSON: {rel}: {exc}")
             data = {}
         if rel == ".cursor/mcp.json":
+            if "/ABSOLUTE/PATH/TO/" in text:
+                errors.append(".cursor/mcp.json contains unreplaced /ABSOLUTE/PATH/TO placeholder")
             for placeholder in UNREPLACED_PLACEHOLDERS:
                 if placeholder in text:
                     errors.append(f"Unreplaced placeholder in .cursor/mcp.json: {placeholder}")
             if "mcpServers" not in data:
                 errors.append("Missing mcpServers in .cursor/mcp.json")
+            _validate_ir_search_mcp_config(root, data, errors)
         if ENV_REF_RE.search(text):
             warnings.append(f"{rel} uses ${'{'}env:KEY{'}'} references; confirm Cursor env expansion or launch Cursor from an exported shell.")
+
+
+def _validate_ir_search_mcp_config(root: Path, data: dict, errors: list[str]) -> None:
+    server = data.get("mcpServers", {}).get("ir_search", {}) if isinstance(data, dict) else {}
+    command = server.get("command", "")
+    if not command:
+        errors.append("Missing ir_search MCP command")
+    elif command.startswith("/ABSOLUTE/PATH/TO/"):
+        errors.append("ir_search MCP command still uses /ABSOLUTE/PATH/TO placeholder")
+    elif command.startswith("/") and not Path(command).exists():
+        errors.append(f"ir_search MCP command does not exist: {command}")
+
+    for arg in server.get("args", []):
+        if isinstance(arg, str) and arg.startswith("/ABSOLUTE/PATH/TO/"):
+            errors.append(f"ir_search MCP arg still uses /ABSOLUTE/PATH/TO placeholder: {arg}")
+        elif isinstance(arg, str) and arg.startswith("/") and arg.endswith(".sh") and not Path(arg).exists():
+            errors.append(f"ir_search MCP script arg does not exist: {arg}")
+
+    env = server.get("env", {})
+    python_path = env.get("IR_SEARCH_PYTHON", "")
+    if python_path.startswith("/ABSOLUTE/PATH/TO/"):
+        errors.append("IR_SEARCH_PYTHON still uses /ABSOLUTE/PATH/TO placeholder")
+    elif python_path and not Path(python_path).exists():
+        errors.append(f"IR_SEARCH_PYTHON does not exist: {python_path}")
+
+    ir_search_path = env.get("IR_SEARCH_PATH", "")
+    if ir_search_path.startswith("/ABSOLUTE/PATH/TO/"):
+        errors.append("IR_SEARCH_PATH still uses /ABSOLUTE/PATH/TO placeholder")
+    elif ir_search_path:
+        package_marker = Path(ir_search_path) / "ir_search" / "__init__.py"
+        if not package_marker.exists():
+            errors.append(f"IR_SEARCH_PATH is not an ir_search repository root: {ir_search_path}")
+
+    env_file = env.get("IR_SEARCH_ENV_FILE", "")
+    if env_file.startswith("/ABSOLUTE/PATH/TO/"):
+        errors.append("IR_SEARCH_ENV_FILE still uses /ABSOLUTE/PATH/TO placeholder")
+    elif env_file and not Path(env_file).exists():
+        errors.append(f"IR_SEARCH_ENV_FILE does not exist: {env_file}")
 
 
 def _validate_rules(root: Path, errors: list[str]) -> None:
@@ -209,6 +254,8 @@ def _validate_policy_consistency(root: Path, errors: list[str]) -> None:
 def _scan_workspace_text(root: Path, errors: list[str], warnings: list[str], *, strict: bool) -> None:
     for path in root.rglob("*"):
         if not path.is_file():
+            continue
+        if any(part in SKIP_SCAN_PARTS for part in path.relative_to(root).parts):
             continue
         try:
             text = path.read_text(encoding="utf-8")

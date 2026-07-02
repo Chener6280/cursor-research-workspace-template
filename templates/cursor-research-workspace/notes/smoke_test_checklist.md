@@ -2,6 +2,7 @@
 
 Run these prompts after creating the workspace:
 
+0. `docs/onboarding.md`
 1. `prompts/R-SOURCE-HEALTH.md`
 2. `prompts/R-DEEP-RESEARCH-SMOKE.md`
 3. `prompts/R-FINANCE-WEB.md`

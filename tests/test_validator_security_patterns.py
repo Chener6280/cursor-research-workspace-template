@@ -22,7 +22,8 @@ def test_validator_allows_placeholders_but_flags_real_secret():
 
 def test_validator_personal_path_warning_and_strict_error(tmp_path):
     target = tmp_path / "research"
-    assert bootstrap_main(["--target", str(target), "--ir-search-python", "/tmp/fake-ir-search/.venv/bin/python"]) == 0
+    python_path, ir_search_path = _fake_ir_search_runtime(tmp_path)
+    assert bootstrap_main(["--target", str(target), "--ir-search-python", str(python_path), "--ir-search-path", str(ir_search_path)]) == 0
     (target / "notes" / "manual_verification_log.md").write_text("/Users/alice/private\n", encoding="utf-8")
 
     errors, warnings = _load_validator().collect_validation_issues(target)
@@ -33,14 +34,41 @@ def test_validator_personal_path_warning_and_strict_error(tmp_path):
     assert any("Personal path" in error for error in strict_errors)
 
 
-def test_validator_emits_env_expansion_warning(tmp_path):
+def test_validator_accepts_wrapper_mcp_without_env_expansion_warning(tmp_path):
     target = tmp_path / "research"
-    assert bootstrap_main(["--target", str(target), "--ir-search-python", "/tmp/fake-ir-search/.venv/bin/python"]) == 0
+    python_path, ir_search_path = _fake_ir_search_runtime(tmp_path)
+    assert bootstrap_main(["--target", str(target), "--ir-search-python", str(python_path), "--ir-search-path", str(ir_search_path)]) == 0
 
     errors, warnings = _load_validator().collect_validation_issues(target)
 
     assert not errors
-    assert any("${env:KEY}" in warning for warning in warnings)
+    assert not any("${env:KEY}" in warning for warning in warnings)
+
+
+def test_validator_rejects_unreplaced_absolute_placeholders(tmp_path):
+    target = tmp_path / "research"
+    python_path, ir_search_path = _fake_ir_search_runtime(tmp_path)
+    assert bootstrap_main(["--target", str(target), "--ir-search-python", str(python_path), "--ir-search-path", str(ir_search_path)]) == 0
+    mcp_path = target / ".cursor" / "mcp.json"
+    mcp_text = mcp_path.read_text(encoding="utf-8")
+    mcp_path.write_text(mcp_text.replace(str(python_path), "/ABSOLUTE/PATH/TO/python"), encoding="utf-8")
+
+    errors = _load_validator().validate_workspace(target)
+
+    assert any("/ABSOLUTE/PATH/TO" in error for error in errors)
+
+
+def test_validator_rejects_missing_mcp_python(tmp_path):
+    target = tmp_path / "research"
+    python_path, ir_search_path = _fake_ir_search_runtime(tmp_path)
+    assert bootstrap_main(["--target", str(target), "--ir-search-python", str(python_path), "--ir-search-path", str(ir_search_path)]) == 0
+    mcp_path = target / ".cursor" / "mcp.json"
+    missing_python = tmp_path / "missing-python"
+    mcp_path.write_text(mcp_path.read_text(encoding="utf-8").replace(str(python_path), str(missing_python)), encoding="utf-8")
+
+    errors = _load_validator().validate_workspace(target)
+
+    assert any("IR_SEARCH_PYTHON does not exist" in error for error in errors)
 
 
 def _load_validator():
@@ -50,3 +78,14 @@ def _load_validator():
     assert spec and spec.loader
     spec.loader.exec_module(module)
     return module
+
+
+def _fake_ir_search_runtime(tmp_path: Path) -> tuple[Path, Path]:
+    python_path = tmp_path / "fake-python"
+    python_path.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+    python_path.chmod(0o755)
+    ir_search_path = tmp_path / "fake-ir-search"
+    package = ir_search_path / "ir_search"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    return python_path.resolve(), ir_search_path.resolve()

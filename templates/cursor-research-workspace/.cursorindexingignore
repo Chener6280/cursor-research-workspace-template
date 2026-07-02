@@ -8,7 +8,9 @@
 !/README.md
 !/.env.example
 
-# Index reusable prompts, notes, source summaries, selected outputs, and local validation scripts.
+# Index reusable docs, prompts, notes, source summaries, selected outputs, and local validation scripts.
+!/docs/
+!/docs/**
 !/prompts/
 !/prompts/**
 !/notes/

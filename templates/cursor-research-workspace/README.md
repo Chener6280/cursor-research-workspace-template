@@ -22,11 +22,12 @@ It is designed to make Cursor behave more like a web-based GPT/Claude research a
 
 1. Open this folder alone in Cursor.
 2. Do not open the `ir-search` code repository in the same Cursor window for research Q&A.
-3. Start with `prompts/R-SOURCE-HEALTH.md` to call `ir_search.source_health`.
-4. Run `prompts/R-DEEP-RESEARCH-SMOKE.md` before production use.
-5. Use `prompts/R-FINANCE-WEB.md` for current finance or market work.
-6. Use `prompts/R-LITERATURE.md` for local-only / document-first reading.
-7. If MCP fails, downgrade to conceptual analysis and a manual verification checklist.
+3. Read `docs/onboarding.md`.
+4. Start with `prompts/R-SOURCE-HEALTH.md` to call `ir_search.source_health`.
+5. Run `prompts/R-DEEP-RESEARCH-SMOKE.md` before production use.
+6. Use `prompts/R-FINANCE-WEB.md` for current finance or market work.
+7. Use `prompts/R-LITERATURE.md` for local-only / document-first reading.
+8. If MCP fails, downgrade to conceptual analysis and a manual verification checklist.
 
 ## Outputs
 
