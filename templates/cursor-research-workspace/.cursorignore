@@ -1,0 +1,25 @@
+# Default deny to prevent accidental context pollution.
+/*
+
+# Allow Cursor workspace configuration.
+!/.cursor/
+!/.cursor/**
+!/AGENTS.md
+!/README.md
+!/.env.example
+
+# Allow research prompts, notes, sources, and outputs.
+!/prompts/
+!/prompts/**
+
+!/notes/
+!/notes/**
+
+!/sources/
+!/sources/**
+
+!/outputs/
+!/outputs/**
+
+!/scripts/
+!/scripts/**

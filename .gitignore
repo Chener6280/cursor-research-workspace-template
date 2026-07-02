@@ -1,0 +1,8 @@
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.cursor/mcp.json
+outputs/*
+!outputs/.gitkeep

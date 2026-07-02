@@ -1,0 +1,45 @@
+---
+description: Required output format for evidence-based research answers
+alwaysApply: true
+---
+
+# Evidence-based Output Format
+
+For current-information or evidence-based research questions, use this structure:
+
+## 检索状态
+
+- 是否调用 ir_search:
+- 是否调用 source_health:
+- 使用的工具:
+- 检索轮数:
+- 读取文档数:
+- 官方源是否尝试:
+- diagnostics:
+- mock / placeholder / fallback:
+
+## 核心结论
+
+Numbered conclusions only. Each conclusion must be tied to one of:
+
+- supported;
+- mixed;
+- insufficient_evidence;
+- contradicted.
+
+## 证据表
+
+| Claim | Status | Source | Source Type | Date | Evidence | Caveat |
+|---|---|---|---|---|---|---|
+
+## 分析
+
+Explain mechanisms, implications, and alternative explanations.
+
+## 未验证事项
+
+List facts that require further verification.
+
+## 结论边界
+
+State what the evidence can and cannot support.

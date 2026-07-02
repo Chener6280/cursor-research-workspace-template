@@ -1,0 +1,18 @@
+# Default deny indexing.
+/*
+
+# Index only research-relevant files.
+!/.cursor/
+!/.cursor/**
+!/AGENTS.md
+!/README.md
+!/.env.example
+
+!/prompts/
+!/prompts/**
+
+!/notes/
+!/notes/**
+
+!/sources/
+!/sources/**

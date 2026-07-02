@@ -1,0 +1,91 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+from pathlib import Path
+
+from scripts.bootstrap_cursor_research_workspace import main as bootstrap_main
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+TEMPLATE_ROOT = REPO_ROOT / "templates" / "cursor-research-workspace"
+
+
+def test_workspace_template_files_exist():
+    required = [
+        "README.md",
+        "AGENTS.md",
+        ".cursorignore",
+        ".cursorindexingignore",
+        ".env.example",
+        ".cursor/mcp.json.template",
+        ".cursor/rules/20-ir-search-evidence-policy.mdc",
+        "prompts/R-FINANCE-WEB.md",
+        "scripts/validate_workspace.py",
+        "scripts/smoke_test_checklist.md",
+    ]
+
+    for rel in required:
+        assert (TEMPLATE_ROOT / rel).exists(), rel
+
+
+def test_bootstrap_dry_run_succeeds(tmp_path):
+    target = tmp_path / "research"
+
+    assert bootstrap_main(["--target", str(target), "--ir-search-python", "/tmp/fake-ir-search/.venv/bin/python", "--dry-run"]) == 0
+    assert not target.exists()
+
+
+def test_bootstrap_generates_valid_workspace(tmp_path):
+    target = tmp_path / "research"
+
+    assert bootstrap_main(["--target", str(target), "--ir-search-python", "/tmp/fake-ir-search/.venv/bin/python"]) == 0
+    mcp = json.loads((target / ".cursor" / "mcp.json.example").read_text(encoding="utf-8"))
+
+    assert mcp["mcpServers"]["ir_search"]["command"] == "/tmp/fake-ir-search/.venv/bin/python"
+    assert (target / ".cursor" / "mcp.json").exists()
+
+
+def test_validate_workspace_detects_missing_file(tmp_path):
+    validator = _load_validator()
+    target = tmp_path / "bad"
+    target.mkdir()
+
+    errors = validator.validate_workspace(target)
+
+    assert any("Missing file" in error for error in errors)
+
+
+def test_validate_workspace_detects_secret_and_personal_path(tmp_path):
+    target = tmp_path / "research"
+    assert bootstrap_main(["--target", str(target), "--ir-search-python", "/tmp/fake-ir-search/.venv/bin/python"]) == 0
+    (target / "notes" / "manual_verification_log.md").write_text("token=fake-test-token\n/Users/alice/private\n", encoding="utf-8")
+
+    errors = _load_validator().validate_workspace(target)
+
+    assert any("Possible secret" in error for error in errors)
+    assert any("Personal path" in error for error in errors)
+
+
+def test_rules_include_required_evidence_constraints():
+    rules = "\n".join(path.read_text(encoding="utf-8") for path in (TEMPLATE_ROOT / ".cursor" / "rules").glob("*.mdc"))
+
+    for phrase in [
+        "source_health",
+        "fallback",
+        "search snippets",
+        "untrusted",
+        "insufficient_evidence",
+        "contradicted",
+        "claim_ledger",
+    ]:
+        assert phrase in rules
+
+
+def _load_validator():
+    validator_path = TEMPLATE_ROOT / "scripts" / "validate_workspace.py"
+    spec = importlib.util.spec_from_file_location("cursor_workspace_validator_test", validator_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(module)
+    return module
