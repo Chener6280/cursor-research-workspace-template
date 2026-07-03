@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import importlib.util
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -54,3 +55,23 @@ def test_pyproject_if_present_is_parseable():
         except ModuleNotFoundError:
             return
         tomllib.loads(path.read_text(encoding="utf-8"))
+
+
+def test_acceptance_cases_are_multiline_and_cover_twenty_cases():
+    path = REPO_ROOT / "tests" / "acceptance_cases.yaml"
+    text = _text(path)
+
+    assert text.count("\n") > 120
+    assert text.count("  - id:") >= 20
+    assert "must_not:" in text
+
+
+def test_bootstrap_and_validator_scripts_are_importable():
+    for path in [
+        REPO_ROOT / "scripts" / "bootstrap_cursor_research_workspace.py",
+        TEMPLATE_ROOT / "scripts" / "validate_workspace.py",
+    ]:
+        spec = importlib.util.spec_from_file_location(path.stem, path)
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(module)
