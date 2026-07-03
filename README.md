@@ -4,6 +4,8 @@ This repository provides a reusable Cursor research workspace template backed by
 
 It is a template repository, not the daily research workspace itself. Use the bootstrap script to generate a separate workspace, then open that generated folder alone in Cursor.
 
+The canonical Cursor behavior acceptance cases live in `tests/acceptance_cases.yaml`; `ir-search` may keep a mirrored engine-side dry-run suite, but this repository is the source of truth for Cursor workspace behavior.
+
 ## What This Repo Is
 
 - A reusable Cursor research workspace template.
@@ -18,7 +20,7 @@ It is a template repository, not the daily research workspace itself. Use the bo
 - `docs/cursor_research_workspace_setup.md`: setup guide.
 - `scripts/run_acceptance_cases.py`: dry-run acceptance case harness.
 - `scripts/score_acceptance_results.py`: Markdown acceptance report scorer.
-- `tests/acceptance_cases.yaml`: machine-readable acceptance cases.
+- `tests/acceptance_cases.yaml`: canonical machine-readable Cursor behavior acceptance cases.
 - `tests/`: template, bootstrap, prompt, and validator tests.
 
 ## Quickstart

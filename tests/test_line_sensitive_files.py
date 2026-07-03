@@ -38,8 +38,16 @@ def test_ignore_files_have_active_multiline_rules():
         assert active
         assert active[0] == "/*"
 
-    assert _text(TEMPLATE_ROOT / ".cursorindexingignore").count("\n") >= 20
+    assert _text(TEMPLATE_ROOT / ".cursorindexingignore").count("\n") >= 25
     assert _text(TEMPLATE_ROOT / ".cursor" / "mcp.json.template").count("\n") >= 8
+
+
+def test_gitattributes_is_line_delimited():
+    text = _text(REPO_ROOT / ".gitattributes")
+
+    assert text.count("\n") >= 8
+    for rule in ["* text=auto eol=lf", "*.py text eol=lf", "*.mdc text eol=lf", "*.yaml text eol=lf"]:
+        assert rule in text.splitlines()
 
 
 def test_python_files_do_not_use_cr_only_newlines():
@@ -53,8 +61,9 @@ def test_python_files_do_not_use_cr_only_newlines():
 def test_key_scripts_have_reviewable_line_counts():
     thresholds = {
         REPO_ROOT / "scripts" / "bootstrap_cursor_research_workspace.py": 80,
-        REPO_ROOT / "scripts" / "score_acceptance_results.py": 80,
-        TEMPLATE_ROOT / "scripts" / "validate_workspace.py": 100,
+        REPO_ROOT / "scripts" / "run_acceptance_cases.py": 80,
+        REPO_ROOT / "scripts" / "score_acceptance_results.py": 120,
+        TEMPLATE_ROOT / "scripts" / "validate_workspace.py": 120,
     }
     for path, minimum in thresholds.items():
         assert _text(path).count("\n") >= minimum, path
