@@ -38,6 +38,9 @@ def test_ignore_files_have_active_multiline_rules():
         assert active
         assert active[0] == "/*"
 
+    assert _text(TEMPLATE_ROOT / ".cursorindexingignore").count("\n") >= 20
+    assert _text(TEMPLATE_ROOT / ".cursor" / "mcp.json.template").count("\n") >= 8
+
 
 def test_python_files_do_not_use_cr_only_newlines():
     for path in list((REPO_ROOT / "scripts").glob("*.py")) + list((TEMPLATE_ROOT / "scripts").glob("*.py")):
@@ -45,6 +48,16 @@ def test_python_files_do_not_use_cr_only_newlines():
 
         assert b"\r" not in data
         assert data.count(b"\n") > 10
+
+
+def test_key_scripts_have_reviewable_line_counts():
+    thresholds = {
+        REPO_ROOT / "scripts" / "bootstrap_cursor_research_workspace.py": 80,
+        REPO_ROOT / "scripts" / "score_acceptance_results.py": 80,
+        TEMPLATE_ROOT / "scripts" / "validate_workspace.py": 100,
+    }
+    for path, minimum in thresholds.items():
+        assert _text(path).count("\n") >= minimum, path
 
 
 def test_pyproject_if_present_is_parseable():

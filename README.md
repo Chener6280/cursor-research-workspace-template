@@ -57,7 +57,8 @@ Validate the generated workspace:
 
 ```bash
 python /tmp/cursor-research-workspace/scripts/validate_workspace.py \
-  /tmp/cursor-research-workspace
+  /tmp/cursor-research-workspace \
+  --mode generated
 ```
 
 See [docs/cursor_research_workspace_setup.md](docs/cursor_research_workspace_setup.md) for the full setup flow.
@@ -84,6 +85,9 @@ python scripts/score_acceptance_results.py tests/fixtures/sample_acceptance_outp
 
 ```bash
 python -m pytest
+python templates/cursor-research-workspace/scripts/validate_workspace.py \
+  templates/cursor-research-workspace \
+  --mode template
 python scripts/bootstrap_cursor_research_workspace.py --dry-run \
   --target /tmp/cursor-research-workspace \
   --ir-search-python /tmp/ir-search/.venv/bin/python \

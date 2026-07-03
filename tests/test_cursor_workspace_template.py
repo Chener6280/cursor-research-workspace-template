@@ -65,9 +65,20 @@ def test_validate_workspace_detects_missing_file(tmp_path):
     target = tmp_path / "bad"
     target.mkdir()
 
-    errors = validator.validate_workspace(target)
+    errors = validator.validate_workspace(target, mode="generated")
 
     assert any("Missing file" in error for error in errors)
+
+
+def test_validate_workspace_modes_handle_missing_rendered_mcp():
+    validator = _load_validator()
+
+    template_errors, template_warnings = validator.collect_validation_issues(TEMPLATE_ROOT, mode="template")
+    generated_errors = validator.validate_workspace(TEMPLATE_ROOT, mode="generated")
+
+    assert not any("Missing .cursor/mcp.json" in error for error in template_errors)
+    assert any("Missing .cursor/mcp.json" in warning for warning in template_warnings)
+    assert any("Missing .cursor/mcp.json" in error for error in generated_errors)
 
 
 def test_validate_workspace_detects_secret_and_personal_path(tmp_path):
@@ -77,8 +88,8 @@ def test_validate_workspace_detects_secret_and_personal_path(tmp_path):
     (target / "notes" / "manual_verification_log.md").write_text("token=real-secret\n/Users/alice/private\n", encoding="utf-8")
 
     validator = _load_validator()
-    errors, warnings = validator.collect_validation_issues(target)
-    strict_errors = validator.validate_workspace(target, strict=True)
+    errors, warnings = validator.collect_validation_issues(target, mode="generated")
+    strict_errors = validator.validate_workspace(target, strict=True, mode="generated")
 
     assert any("Possible secret" in error for error in errors)
     assert any("Personal path" in warning for warning in warnings)
