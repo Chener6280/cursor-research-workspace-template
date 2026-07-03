@@ -17,7 +17,7 @@ def test_template_mode_does_not_require_rendered_mcp():
 
     errors, warnings = validator.collect_validation_issues(TEMPLATE_ROOT, mode="template")
 
-    assert validator.VALIDATOR_VERSION == "2026-07-03-r5"
+    assert validator.VALIDATOR_VERSION == "2026-07-03-r6"
     assert not any("Missing .cursor/mcp.json" in error for error in errors)
     assert any("Missing .cursor/mcp.json" in warning for warning in warnings)
 
@@ -45,7 +45,19 @@ def test_bootstrap_output_validates_in_generated_mode(tmp_path):
     target = tmp_path / "research"
     python_path, ir_search_path = _fake_ir_search_runtime(tmp_path)
 
-    assert bootstrap_main(["--target", str(target), "--ir-search-python", str(python_path), "--ir-search-path", str(ir_search_path)]) == 0
+    assert (
+        bootstrap_main(
+            [
+                "--target",
+                str(target),
+                "--ir-search-python",
+                str(python_path),
+                "--ir-search-path",
+                str(ir_search_path),
+            ]
+        )
+        == 0
+    )
     errors = _load_validator_from(target).validate_workspace(target, mode="generated")
     mcp = json.loads((target / ".cursor" / "mcp.json").read_text(encoding="utf-8"))
 
@@ -58,7 +70,7 @@ def test_validator_cli_prints_version(capsys):
     output = capsys.readouterr().out
 
     assert result == 0
-    assert "[INFO] validate_workspace version: 2026-07-03-r5" in output
+    assert "[INFO] validate_workspace version: 2026-07-03-r6" in output
 
 
 def _load_validator():
@@ -68,8 +80,8 @@ def _load_validator():
 def _load_validator_from(root: Path):
     validator_path = root / "scripts" / "validate_workspace.py"
     spec = importlib.util.spec_from_file_location("cursor_workspace_validator_test", validator_path)
-    module = importlib.util.module_from_spec(spec)
     assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
