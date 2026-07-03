@@ -17,7 +17,7 @@ def test_template_mode_does_not_require_rendered_mcp():
 
     errors, warnings = validator.collect_validation_issues(TEMPLATE_ROOT, mode="template")
 
-    assert validator.VALIDATOR_VERSION == "2026-07-03-r7"
+    assert validator.VALIDATOR_VERSION == "2026-07-03-r8"
     assert not any("Missing .cursor/mcp.json" in error for error in errors)
     assert any("Missing .cursor/mcp.json" in warning for warning in warnings)
 
@@ -70,7 +70,7 @@ def test_validator_cli_prints_version(capsys):
     output = capsys.readouterr().out
 
     assert result == 0
-    assert "[INFO] validate_workspace version: 2026-07-03-r7" in output
+    assert "[INFO] validate_workspace version: 2026-07-03-r8" in output
 
 
 def _load_validator():
@@ -88,7 +88,14 @@ def _load_validator_from(root: Path):
 
 def _fake_ir_search_runtime(tmp_path: Path) -> tuple[Path, Path]:
     python_path = tmp_path / "fake-python"
-    python_path.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+    python_path.write_text(
+        "#!/usr/bin/env bash\n"
+        "if [[ \"${1:-}\" == \"-c\" && \"${2:-}\" == *\"list_tool_names\"* ]]; then\n"
+        "  echo '[\"search\", \"fetch_document\", \"extract_evidence\", \"verify_claims\", \"deep_research\", \"source_health\"]'\n"
+        "fi\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
     python_path.chmod(0o755)
     ir_search_path = tmp_path / "fake-ir-search"
     package = ir_search_path / "ir_search"

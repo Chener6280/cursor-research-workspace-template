@@ -62,7 +62,7 @@ def test_bootstrap_overwrite_refreshes_generated_validator(tmp_path):
     ) == 0
 
     validator = _load_generated_validator(target)
-    assert validator.VALIDATOR_VERSION == "2026-07-03-r7"
+    assert validator.VALIDATOR_VERSION == "2026-07-03-r8"
 
 
 def _load_generated_validator(target: Path):
@@ -76,7 +76,14 @@ def _load_generated_validator(target: Path):
 
 def _fake_ir_search_runtime(tmp_path: Path) -> tuple[Path, Path]:
     python_path = tmp_path / "fake-python"
-    python_path.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+    python_path.write_text(
+        "#!/usr/bin/env bash\n"
+        "if [[ \"${1:-}\" == \"-c\" && \"${2:-}\" == *\"list_tool_names\"* ]]; then\n"
+        "  echo '[\"search\", \"fetch_document\", \"extract_evidence\", \"verify_claims\", \"deep_research\", \"source_health\"]'\n"
+        "fi\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
     python_path.chmod(0o755)
     ir_search_path = tmp_path / "fake-ir-search"
     package = ir_search_path / "ir_search"

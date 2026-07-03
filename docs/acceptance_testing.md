@@ -6,6 +6,16 @@ This repository is the canonical source for Cursor workspace acceptance cases. T
 
 The harness does not call live MCP tools by itself. It records expected case structure, required tool sequences, and scoring checks so a human or Cursor-run black-box report can be reviewed consistently.
 
+Before a real Cursor black-box run, the generated workspace must pass the MCP runtime preflight:
+
+```bash
+python /ABSOLUTE/PATH/TO/cursor-research-workspace/scripts/validate_workspace.py \
+  /ABSOLUTE/PATH/TO/cursor-research-workspace \
+  --mode generated
+```
+
+This validation calls `scripts/doctor_ir_search_mcp.py` unless `--skip-mcp-runtime-check` is explicitly provided. Acceptance results are not considered release evidence when `ir_search` is absent from Cursor's MCP tool list or when the selected `IR_SEARCH_PYTHON` cannot import `mcp.server.fastmcp.FastMCP`.
+
 ## Run the Dry Run
 
 ```bash

@@ -48,10 +48,21 @@ The generated MCP config points Cursor at the local `ir_search` Python entrypoin
 
 The template supports these values:
 
-- `IR_SEARCH_PYTHON`: Python interpreter that can import `ir_search`.
+- `IR_SEARCH_PYTHON`: Python 3.10+ interpreter that can import both `ir_search` and `mcp.server.fastmcp.FastMCP`.
 - `IR_SEARCH_PATH`: local `ir-search` repository root.
 - `IR_SEARCH_ENV_FILE`: optional private env file.
 - `IR_SEARCH_LIVE`: `0` for safe dry-run mode, `1` for live provider access.
+
+Bootstrap now runs an MCP runtime preflight by default. It fails fast if the selected Python cannot import `ir_search`, cannot import `mcp.server.fastmcp.FastMCP`, cannot import `ir_search.mcp_server`, or cannot expose the expected MCP tools. Install the MCP extra into the same Python that Cursor will use:
+
+```bash
+/tmp/ir-search/.venv/bin/python -m pip install -e "/tmp/ir-search[mcp]"
+python scripts/doctor_ir_search_mcp.py \
+  --ir-search-python /tmp/ir-search/.venv/bin/python \
+  --ir-search-path /tmp/ir-search
+```
+
+Use `--skip-mcp-runtime-check` only for template packaging or intentionally offline fixture generation. It is not a substitute for a working Cursor MCP connection.
 
 ## Validate
 
