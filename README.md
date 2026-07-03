@@ -44,7 +44,7 @@ python scripts/bootstrap_cursor_research_workspace.py \
 
 ## Configure ir_search MCP
 
-The generated MCP config points Cursor at the local `ir_search` Python entrypoint. Keep secrets in your private `ir_search` environment file, not in this repository or generated prompts.
+The generated MCP config points Cursor at the local `ir_search` Python entrypoint. Keep secrets in your private `ir_search` environment file or generated workspace `.env.local`, not in this repository or generated prompts.
 
 The template supports these values:
 
@@ -52,6 +52,18 @@ The template supports these values:
 - `IR_SEARCH_PATH`: local `ir-search` repository root.
 - `IR_SEARCH_ENV_FILE`: optional private env file.
 - `IR_SEARCH_LIVE`: `0` for safe dry-run mode, `1` for live provider access.
+
+Cursor GUI sessions may not inherit shell environment variables. Generated workspaces include `.env.local.example`; copy it to `.env.local`, fill only local private values, restart Cursor or open a new Agent session, and run `prompts/R-SOURCE-HEALTH.md`. The doctor and source health output report booleans such as `has_BOCHA_API_KEY` plus explicit reasons like `key_missing`, `live_disabled`, or `command_missing`; they must not print secret values.
+
+For an existing private env file, bootstrap can link it without copying values into `.cursor/mcp.json`:
+
+```bash
+python scripts/bootstrap_cursor_research_workspace.py \
+  --target /tmp/cursor-research-workspace \
+  --ir-search-python /tmp/ir-search/.venv/bin/python \
+  --ir-search-path /tmp/ir-search \
+  --env-local-path /tmp/ir-search/ir_search.env
+```
 
 Bootstrap now runs an MCP runtime preflight by default. It fails fast if the selected Python cannot import `ir_search`, cannot import `mcp.server.fastmcp.FastMCP`, cannot import `ir_search.mcp_server`, or cannot expose the expected MCP tools. Install the MCP extra into the same Python that Cursor will use:
 
